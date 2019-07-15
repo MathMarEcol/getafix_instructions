@@ -1,0 +1,650 @@
+http://research.smp.uq.edu.au/computing/getafix.html
+#+SETUPFILE: https://fniessen.github.io/org-html-themes/setup/theme-readtheorg.setup
+* Getafix structure
+
+[[file:imgs/getafix_rendered.png]]
+
+** Cluster
+
+Getafix is a cluster. 
+That means there are many computers all talking to each-other and sharing resources.
+
+The cluster will assign your job to nodes using the SLURM program.
+
+** Node
+
+Each computer in the cluster is called a node. 
+Each node has it's own cpu's, memory and graphics card. 
+Nodes all share a common network drive, so all your data is available on all the nodes.
+
+** Cores and memory
+
+Most nodes in Getafix have about 24 cores, a few have more and a few have less. 
+Each node also typically has about 250GB of memory.
+
+If I can find a list of the nodes, I'll add it for reference.
+
+** Login Node
+
+One node is special, the login node. 
+Strictly speaking, Getafix is the login node, which is why Dogmatix, the older SMP cluster, has access to most of the same resources and nodes.
+The login node works like any remote computer, you can run jobs on the login node, but out of respect for other users, you should only do setup operations and short tests on the login node.
+
+** SLURM
+SLURM is the program that balances all the jobs between users across the cluster.
+You specify what you want the cluster to do, and how much time, nodes, cpu's and memory you think you will need.
+SLURM then waits until the cluster has enough resources available to run your job and starts the job.
+If you try to use more resources than you asked for, your job will be killed.
+If you ask for lots of resources, it might take a while for enough nodes to be available, since smaller jobs will usually fill up the available resources as other jobs end.
+
+** Other Resources
+The cluster has access to shared resources, particularly shared storage and networking, so your data is available on all the nodes at the same location.
+* Getting into Getafix
+** Request Access
+
+Email ITS at help@its.uq.edu.au and request access to the SMP cluster which is called Getafix.
+
+This can take a few days. 
+Make sure you explain your connection to the School of Maths and Physics.
+For HDR students, you will often have both a staff and student account. 
+Let ITS know which one you want to use to log in with.
+
+** Network Access
+You must be on the UQ intranet to access the servers.
+*** eduroam/uq cable/uq wifi
+You are already in the intranet.
+*** Everywhere else
+You will need to install the UQ VPN software and log in. Follow the instructions at:
+
+https://my.uq.edu.au/information-and-services/information-technology/working-remotely/vpn-virtual-private-network
+
+** The terminal
+To access Getafix, you will need a terminal program on your computer.
+
+On mac, this is Terminal.
+
+On windows, this is Command Prompt or Windows Powershell (not Windows Powershell ISE). If you don't have an up to date Windows 10 machine, install [[https://www.chiark.greenend.org.uk/~sgtatham/putty/][PuTTy]].
+
+Some people like the Ubuntu app in windows 10, just remember the /mnt/c/ syntax to get to the files on your computer.
+
+** Logging into Getafix
+
+Once you have your terminal open, type:
+
+#+begin_src sh
+ssh  <username>@getafix.smp.uq.edu.au
+#+end_src
+
+Where ~<username>~ is your staff or student login.
+
+If a popup appears saying ~"Authenticity can't be established"~. Say yes.
+
+Enter your password.
+
+If you see:
+ #+begin_quote
+ ssh: Could not resolve hostname getafix.smp.uq.edu.au: This is usually a temporary error during hostname resolution and means that the local server did not receive a response from an authoritative server.
+ #+end_quote
+
+Then you either typed it incorrectly or are not on the UQ internal network, see [[Network Access]]. 
+
+If you really want R X11 plots to appear on your desktop, add ~-X~ to the login. 
+This works on Mac and Linux. Windows may need an X11 server, which you can most easily get from the Ubuntu app.
+I strongly recommend saving plots into files and copying them to your computer, X11 can be very slow to render.
+
+#+begin_src sh
+ssh -X <username>@getafix.smp.uq.edu.au
+#+end_src
+
+*** Advanced 
+
+**** SSH config file
+
+~\~/.ssh/config~:
+#+begin_src sh
+Host my-getafix
+  ForwardX11Trusted yes #equivalent to adding -X
+  User uqpdyer
+  HostName 130.102.3.59
+
+Host dogmatix
+  ForwardX11Trusted yes
+  User uqpdyer
+  HostName dogmatix.smp.uq.edu.au
+ 
+#+end_src
+
+Now, you only have to type
+
+#+begin_src sh
+ssh my-getafix
+#+end_src
+
+**** COMMENT SSH keyfiles 
+
+Keyfiles are more secure than username/passwords, but we aren't doing anything particularly sensitive here. I won't put this into the lab documents, because I don't see a use case.
+
+
+* Putting your data on Getafix
+** Home, Data
+You need to have your data on Getafix. Where to put it?
+
+#+begin_example
+ls /
+#+end_example
+
+*** Home
+#+begin_example
+/home/username/
+#+end_example
+
+Which is often shortened to 
+
+#+begin_example
+~/
+#+end_example
+
+You have 40GB of data allowed in here. 
+
+The home directory is often used for programs and configuration files. 
+R libraries will install here by default, which is fine.
+
+Don't use the home directory for data sets, results and plots.
+
+*** Data
+#+begin_example
+/data/username/
+#+end_example
+
+You have 400GB of data allowed in here.
+
+Put your data sets and scripts in the ~/data/username/~ directory.
+
+At some point we may have a shared folder in here, probably ~/data/mathmarecol/~.
+
+
+*** Data1, Data2 ... Data6
+Most of the time you use ~/data/~ but there are other data folders that you can access on request.
+
+#+begin_example
+/data1/username/
+/data2/username/
+...
+#+end_example
+
+~data1~ and ~data2~ are older system drives that we are not using.
+
+~data3~ to ~data6~ are high speed access drives for very large file reading and writing.
+These could be useful for work on GCM's.
+
+** Sending your data there
+
+*** scp
+scp is copy over ssh, it should work anywhere ssh works.
+#+begin_src sh
+scp -r  local_folder <username>@getafix.smp.uq.edu.au:/data/<username>/<folder>
+#+end_src
+
+*** WinSCP
+A graphical interface for scp.
+
+*** rsync
+Rsync is smarter than scp, it only copies changes, so it can be faster than scp.
+
+usually installed on Linux, may not be available on Mac or Windows.
+
+#+begin_src sh
+rsync  local_folder <username>@getafix.smp.uq.edu.au:/data/<username>/<folder>
+#+end_src
+
+* Running jobs on Getafix
+** Modules
+
+To allow different versions of software to be used by different users (like python 3.4 versus python 3.6), Getafix uses Linux modules.
+On Getafix, R is in a module, and won't work until you load the module.
+You can use the default version of a module, or specify a particular version of a module if your job depends on it. 
+
+To see what modules are available, type:
+
+#+begin_src sh
+module avail
+#+end_src
+
+When you see a module you want to use, load it with:
+
+#+begin_src sh
+module load <module name>
+#+end_src
+
+I use the following modules:
+
+#+begin_src sh
+module load R
+module load pandoc #rendering rmarkdown into html and pdf
+module load gdal #spatial packages like sf
+module load geos #spatial packages like sf
+module load proj #spatial packages like sf
+#+end_src 
+
+
+** R on Getafix
+R on Getafix is pretty similar to R on your local computer, without RStudio.
+
+*** installing packages
+Install packages to a local library in your home directory.
+
+#+begin_src sh
+module load R
+R
+#+end_src
+
+#+begin_src R
+install.packages("foreach")
+install.packages("doParallel")
+install.packages("sf")
+#+end_src
+
+Accept the default library location unless you have a reason not to.
+
+If your package fails to install, check if there is a system package missing. 
+
+For example, to install ~sf~, you need to load more modules:
+#+begin_src sh
+module load R
+module load gdal
+module load geos
+module load proj
+R
+#+end_src
+
+Now ~sf~ should install.
+
+#+begin_src R
+install.packages("sf")
+#+end_src
+
+If it still does not work, send an email to help@its.uq.edu.au, they have been helpful setting me up when something was missing or broken.
+
+
+*** Parameters for Rmd files
+
+You can pass parameters into Rmd files from the command line.
+You need to set up the `params` in the YAML header, see [[https://bookdown.org/yihui/rmarkdown/parameterized-reports.html]]
+
+Using Rscript, you can render a report using a specified set of parameters like this:
+
+#+begin_src sh
+paramlist='list(nCores =24, gRange = 1:300 )'
+Rscript -e 'knitr::opts_knit$set(progress = TRUE, verbose = TRUE); rmarkdown::render("/data/uqpdyer/demo.Rmd", params = '"${paramlist}"', output_format = "html_notebook", output_file = "outfile.html", output_dir = "/data/uqpdyer", envir = new.env())'
+#+end_src
+
+This is not as convenient as setting parameters in RStudio or within an R session. 
+You have to be very careful about quotes, and the command line is hard to edit.
+
+Sending parameters to an R script in bulk is much easier, but lacks the reproducability of Rmd.
+
+*** Parameters for script files
+
+Use the base ~commandArgs~ or the ~optparse~ package to use command line parameters in your script files
+
+
+Then you can run the script from the command line like this:
+
+#+begin_src sh
+Rscript script.R input1 input2
+#+end_src
+
+
+** SLURM
+
+So far, R has been running on the login node. 
+Some things are easiest to do on the login node, like installing packages and transferring files.
+Computationally heavy tasks should be done on other nodes.
+To use the other nodes, you submit jobs with SLURM.
+
+SLURM is a job scheduler. 
+People request jobs by specifying the resources they need and the scripts to run, and SLURM queues the jobs until some nodes are available to run the job.
+You can also request an interactive session, but it is more efficient to set up jobs and come back to get the results.
+
+*** ~sbatch~
+The command ~sbatch~ is used to submit jobs, which are run when the resources become available.
+
+You use SLURM by calling ~sbatch~:
+#+begin_src sh
+sbatch script.sh
+#+end_src
+
+where ~script.sh~ looks like
+#+begin_src sh
+  #!/bin/bash
+  #SBATCH --ntasks=1
+  #SBATCH --cpus-per-task=1
+  #SBATCH --mem-per-cpu=1G
+  #SBATCH --time=0-00:10
+
+  echo "hello world"
+#+end_src
+
+The ~#SBATCH~ lines at the top are parameters for the sbatch command, you can also include them in the command call:
+
+
+#+begin_src sh
+  sbatch script.sh --ntasks=1 --cpus-per-task=1 --mem-per-cpu=1G --time=0-00:10 script.sh
+#+end_src
+
+Then ~script.sh~ can simplify down to:
+
+#+begin_src sh
+  #!/bin/bash
+
+  echo "hello world"
+#+end_src
+
+When working with R, we run scripts or arbitrary code snippets with Rscript, but the ~sbatch~ command still expects Rscript to be wrapped in ~script_for_r.sh~
+
+#+begin_src shell
+  #!/bin/bash
+  #SBATCH --ntasks=1
+  #SBATCH --cpus-per-task=20
+  #SBATCH --mem-per-cpu=2G
+  #SBATCH --time=0-01:00
+
+  module load R
+  Rscript myRscript.R
+#+end_src
+
+So running ~sbatch~ looks the same:
+
+#+begin_src sh
+sbatch script_for_r.sh
+#+end_src
+
+Here is a meaningful r script we can test out. Note that I have specified 20 cpu's in both ~script_for_r.sh~ and ~myRscript.R~ 
+
+#+begin_src R
+library(foreach)
+library(doParallel)
+
+cl <- makeCluster(2)
+registerDoParallel(cl)
+x <- iris[which(iris[,5] != "setosa"), c(1,5)]
+trials <- 10000
+
+ptime <- system.time({
+  r <- ~foreach~(icount(trials), .combine=cbind) %dopar% {
+    ind <- sample(100, 100, replace=TRUE)
+    result1 <- glm(x[ind,2]~x[ind,1], family=binomial(logit))
+    coefficients(result1)
+  }
+})[3]
+ptime
+
+
+stime <- system.time({
+  r <- ~foreach~(icount(trials), .combine=cbind) %do% {
+    ind <- sample(100, 100, replace=TRUE)
+    result1 <- glm(x[ind,2]~x[ind,1], family=binomial(logit))
+    coefficients(result1)
+  }
+})[3]
+stime
+
+stopCluster(cl)
+
+cl <- makeCluster(20)
+registerDoParallel(cl)
+ptime <- system.time({
+  r <- ~foreach~(icount(trials), .combine=cbind) %dopar% {
+    ind <- sample(100, 100, replace=TRUE)
+    result1 <- glm(x[ind,2]~x[ind,1], family=binomial(logit))
+    coefficients(result1)
+  }
+})[3]
+ptime
+
+#+end_src
+
+
+
+*** ~salloc~ and ~srun~
+
+If you really need to run something interactively, such as a Matlab GUI, make sure you log in with ~-X~ or ~-Y~ and then call:
+
+#+begin_src 1
+ salloc --ntasks=1 --cpus-per-task=1 --mem-per-cpu=1G --time=0-00:10 
+ srun --pty -x11 matlab
+#+end_src
+
+*** Many nodes
+
+So far, we have used only 1 node. 
+The memory and cpu's are all in the same node, and R behaves in exactly the same way as on your machine, only with more cores.
+You are clearly limited to a speed up of around 20 times with a single node.
+
+To go beyond the single node limit, you have a few options.
+
+**** Divide your job up
+If you can break your job up into many independent runs, then you can submit a job for each run, and collect all the different outputs after all the jobs have run.
+
+I have done this to test out the effects of changing combinations of parameters.
+
+**** Rslurm
+
+The Rslurm package will generate a set of scripts that submit a collection of jobs.
+Rslurm does the work of dividing up your job for you.
+
+Take care with this package, the default settings will allocate far too many jobs and overwhelm Getafix.
+
+**** MPI
+Message Passing Interface (MPI) is a library that shares information across nodes.
+
+MPI requires extra setup in your code, and you need to use ~mpirun~ or ~srun~ inside the sbatch script
+
+#+begin_src sh
+  #!/bin/bash
+  #SBATCH --ntasks=1
+  #SBATCH --cpus-per-task=1
+  #SBATCH --mem-per-cpu=1G
+  #SBATCH --time=0-00:10
+
+  mpirun echo "running with MPI"
+  srun echo "run with SRUN"
+#+end_src
+
+doMPI and Rmpi are packages for working with MPI in R.
+
+TODO: I have not figured out MPI on the cluster yet, it didn't "just work"
+
+**** future.batchTools
+
+The future.batchtools package lets you submit SLURM jobs from R.
+The benefit of using future.batchtools is that you write R code using future syntax, then specify a SLURM plan, and all futures at a level specified by the plan are sent off as jobs. 
+The script waits until the job finishes. 
+
+I recommend running a single node task with 1 cpu and a modest amount of ram, but a long running time, then all the heavy lifting is done by new jobs submitted by your script.
+
+Take care with this package, I haven't checked the defaults, but it might request too many resources like Rslurm.
+
+*** R with parameters
+Being able to pass in parameters is useful for dividing your job up.
+
+Some examples of sbatch scripts that use R parameters
+
+#+begin_src sh
+  #!/bin/bash
+  #SBATCH --ntasks=1
+  #SBATCH --cpus-per-task=24
+  #SBATCH --mem-per-cpu=7G
+  #SBATCH --time=1-22:00
+  module load R
+  Rscript script.R $1 $2
+#+end_src
+
+#+begin_src 
+sbatch run_script.sh input1 input2
+sbatch run_script.sh input1 input3
+#+end_src
+
+~$1~ becomes the first argument, ~input1~ both times, and ~$2~ becomes the second argument, ~input2~ in the first run and ~input3~ in the second line.
+
+Rendering an Rmd file with parameters:
+
+#+begin_src sh
+#!/bin/bash
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=24
+#SBATCH --mem-per-cpu=7G
+#SBATCH --time=1-22:00
+module load R
+module load pandoc #essential for knitr and rmarkdown
+
+paramlist='list(nCores =24, gRange = 1:300 )'
+Rscript -e 'knitr::opts_knit$set(progress = TRUE, verbose = TRUE); rmarkdown::render("/data/uqpdyer/demo.Rmd", params = '"${paramlist}"', output_format = "html_notebook", output_file = "outfile.html", output_dir = "/data/uqpdyer", envir = new.env())'
+
+#+end_src
+
+If you want to generate a collection of rendered Rmd files, you have to write up a script for each set of parameters.
+
+The other way to generate a set of Rmd files with different parameters, in parallel, is to copy the file and change the parameters in each file.
+Then you can use job arrays by naming the files from 1 to n.
+
+The simplest approach I can think of to run many different Rmd files is to have a shell script, that calls an R script, that renders an Rmd. 
+Parameters passed to the shell script go all the way down to the Rmd file.
+
+#+begin_src R
+  args = commandArgs(trailingOnly = TRUE)
+
+  knitr::opts_knit$set(progress = TRUE, verbose = TRUE)
+
+  paramlist=list(nCores =as.numeric(args[1]), gRange = as.numeric(args[2]):as.numeric(args[3]))
+  rmarkdown::render("/data/uqpdyer/demo.Rmd", params = paramlist, output_format = "html_notebook",
+                    output_file = "outfile.html", output_dir = "/data/uqpdyer", envir = new.env())
+
+
+#+end_src
+
+* Debugging Rmd files
+Debugging regular R isn't great, but debugging Rmd files non-interactively is even worse.
+
+Here are some tricks:
+
+** Cache on
+Turn on caching for your Rmd file.
+#+begin_example
+```{r caching_on}
+knitr::opts_chunk$set(cache=TRUE)
+```
+#+end_example
+
+
+** Load in cache dir
+
+The qwraps2 package on github has a function, ~lazyload_cache~, which will pull in the saved cache so you can interact with it in RStudio.
+
+https://github.com/dewittpe/qwraps2/blob/master/R/lazyload_cache.R
+
+Once you call ~lazyload_cache()~ on the cache generated by knitr, your environment has all the variables seen up until a failure point.
+
+* Getting Results back
+The batch jobs are not interactive. 
+You set them up to run and come back for the results. 
+Usually you save a file to disk.
+
+** Printed text
+
+All printed output goes to a file ~slurm-<job number>.out~.
+
+You can change the name with 
+#+begin_src sh
+#!/bin/bash
+#SBATCH -o output_file_%A_%a.out #%A is the job number, %a is the array number
+#SBATCH -e error_file.err
+...
+#+end_src
+** Data.frames
+
+If you have R objects you want to see, save them to disk.
+
+- saveRDS :: R binary format, single object, you specify the name when you readRDS
+- fwrite :: data.table csv writer, fast, and gives you a csv
+- feather :: a new binary format backed by Hadley, fast, and compatible with python
+- fst :: another new binary format, extremely fast and you can read in subsets of the data.frame
+- Archivist :: puts everything into a database and gives a unique hash to every object. Good for reproducibility, you can't mix up objects from different runs later on because the hash always changes
+** Plots
+Always save plots to disk, unless you are using Rmd files, which will put the plot into the output html anyway.
+
+Use ~ggsave()~ for ggplots, and ~dev.png()~, your plotting code, ~dev.off()~ for other kinds of R plots.
+
+It is a good idea to set the width, height and dpi for all your plots. 
+
+* Playing nice
+The cluster is a shared resource. 
+
+Try to be as precise as possible when allocating resources, so others can use what you don't need.
+
+Be careful with any package that submits jobs for you (~Rslurm~, ~future.batchtools~). Check the jobs are requesting a reasonable set of resources.
+
+* Parallel coding in R
+
+** ~parlapply~, ~par*apply~ etc.
+
+The parallel package gives you par* versions of the apply family of functions.
+
+Easy to drop in if you usually use the apply family from base R, you replace any ~apply~, ~lapply~, ~sapply~ with ~parapply~, ~parlapply~, ~parsapply~. 
+** ~foreach~ and ~%dopar%~
+
+The ~foreach~ package has a few uses. 
+
+First, it changes how you use ~for~ loops in R. 
+Base R ~for~ loops usually work by changing a variable defined outside the loop.
+~foreach~ is more like an ~apply~, where a result is returned, so ~foreach~ works without needing to use side effects.
+
+Second, because ~foreach~ can work without side effects, it can run the loop in parallel easily.
+There are a number of backends you can use, including ~doParallel~, ~doMPI~, ~doFuture~.
+You can quickly change how parallel works by replacing ~%do%~ with ~%dopar%~ and changing the registerDo* function at the start of your script.
+
+If you already like using ~foreach~ over the apply family, moving to parallel is easy. 
+The main downside is that ~foreach~ is not particularly efficient with resources.
+If you are mostly using the apply family, switching to ~foreach~ is much harder.
+
+** ~future~
+The ~future~ package is built around the idea of a promise. 
+The promise is "Eventually the variable will have a result assigned to it, but not straight away".
+You replace ~<-~ with ~%<-%~ and the line of code becomes a promise, rather than something to do right away.
+
+Generally, you don't need to change your code much, just add ~%~ around your ~<-~ at strategic points, but you can gain a lot of flexibility, and there are many backends.
+
+~future.apply~ gives you parallel versions of ~apply~. 
+~doFuture~ mixes ~future~ and ~foreach~.
+
+~future.batchtools~ spawns jobs on the cluster that return the results into your session.
+~future.callr~ does local parallel calculations in separate R processes.
+~future~ alone will do local multiprocessor calculations and use multiple nodes.
+
+
+** General Coding habits for going parallel
+*** Put things into lists
+It is easy to loop over lists, and you can quickly parallelise the processing of a list.
+*** Don't do graphics in parallel
+Generally speaking, you can specify ggplot objects in parallel, but if you try to print or save them in parallel, R crashes.
+
+You probably have to work very carefully to open multiple ~dev.png()~  for plotting base R plots.
+
+*** Make functions small
+If you repeat something frequently, put it into a function. 
+You can then put functions into packages.
+Try to keep functions small, then they are easier to use in parallel. 
+Generally don't try to work in parallel within a function.
+
+If you want a function to use parallel processing, I strongly recommend you use either ~future~ or ~foreach~ with ~%dopar%~.
+By default, they both drop back to sequential processing, but the user can set up parallel processing before calling the function to get speed improvements.
+
+*** Look for loops, but don't use R base ~for~ loops
+Base R ~for~ loops cannot be used in parallel, because they rely on side effects.
+
+
+
+* Tricks 
+
+** Don't forget which computer you are looking at
+
